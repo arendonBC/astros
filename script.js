@@ -280,9 +280,9 @@ const generarTabla = async () => {
 
         // En la fila "Hora" se muestra la hora; en las demás, el nombre del día.
         const diaCell = (tipo === "Hora") ? horaCompleta : obtenerNombreDia(diaSemana);
-        // Solo en la fila "Hora" se agrega "guia" debajo del arcángel.
+        // Solo en la fila "Hora" se agrega "Ángel Guía" debajo del arcángel.
         const arcangelContent = (tipo === "Hora")
-            ? `${infoActual.arcangel}<br><small>guia</small>`
+            ? `${infoActual.arcangel}<br><small> (Ángel Guía) </small>`
             : infoActual.arcangel;
 
         // Genera la fila de la tabla con background y color de texto
