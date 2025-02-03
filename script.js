@@ -104,9 +104,9 @@ const colorMapping = {
 const textColorMapping = {
     "Azul": "white",
     "Rojo": "white",
-    "Amarillo": "black",
+    "Amarillo": "white",
     "Verde": "white",
-    "Violeta": "black",
+    "Violeta": "white",
     "Blanco": "black",
     "Negro": "white"
 };
