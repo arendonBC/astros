@@ -6,11 +6,12 @@ body {
 }
 
 .container {
-    margin: 0 auto;
+    margin: 0 5px;
     padding: 20px;
     background: #fff;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: dashed 1px #b3b3b3;
 }
 
 h1, h2, h3, h4 {
@@ -121,6 +122,9 @@ img {
 }
 
 @media (max-width: 768px) {
+    .container {
+        margin-top: 20px;
+    }
     .normal-table {
         display: none;
     }
