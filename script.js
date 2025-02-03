@@ -112,7 +112,7 @@ const textColorMapping = {
 };
 
 const simbolosImagenes = ordenCorrecto.reduce((acc, astro) => {
-    acc[astro] = `./imagenes/${astro}.png`;
+    acc[astro] = `./img/${astro}.png`;
     return acc;
 }, {});
 
@@ -143,7 +143,6 @@ const cargarImagenes = async () => {
     const promesas = Object.entries(simbolosImagenes).map(([astro, ruta]) => {
         return new Promise((resolve) => {
             const img = new Image();
-            // Si las imágenes provienen de otro dominio, descomenta la siguiente línea:
             img.crossOrigin = "Anonymous";
             img.src = ruta;
             img.onload = () => {
