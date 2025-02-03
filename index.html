@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estudiantes Astrales</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div class="container">
+    <div id="inputDiv">
+      <h1>Estudiantes Astrales</h1>
+      <label for="nombre">Nombre:</label>
+      <input type="text" id="nombre" placeholder="Ingresa tu nombre" value="Ingresa tu nombre">
+      <label for="fecha">Selecciona Fecha y Hora:</label>
+      <input type="datetime-local" id="fecha">
+      <button onclick="generarTabla()">Generar</button>
+    </div>
+    <div id="resultado" style="display: none;"></div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.13/jspdf.plugin.autotable.min.js"></script>
+  <script  src="./script.js"></script>
+</body>
+</html>
