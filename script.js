@@ -337,6 +337,7 @@ const generarTabla = async () => {
 const volverADigitar = () => {
     document.getElementById("inputDiv").style.display = "block";
     document.getElementById("resultado").style.display = "none";
+    document.getElementById("botones").style.display = "none";
     document.getElementById("resultado").innerHTML = "";
 };
 
