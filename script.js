@@ -329,6 +329,7 @@ const generarTabla = async () => {
     `;
     document.getElementById("inputDiv").style.display = "none";
     document.getElementById("resultado").style.display = "block";
+    document.getElementById("botones").style.display = "block";
 };
 
 /**
