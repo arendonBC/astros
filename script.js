@@ -321,8 +321,10 @@ const generarTabla = async () => {
     tablaHTML += `</table>`;
     tablaResponsiveHTML += `</div>`;
 
-    document.getElementById("resultado").innerHTML = tablaHTML + tablaResponsiveHTML + `
-        <button onclick="guardarInformacion()">Guardar Información</button>
+    document.getElementById("resultado").innerHTML = tablaHTML + tablaResponsiveHTML;
+    document.getElementById("botones").innerHTML = `
+        <button onclick="guardarInformacionPNG()">Guardar Foto</button>
+        <button onclick="guardarInformacion()">Guardar PDF</button>
         <button onclick="volverADigitar()">Volver a digitar</button>
     `;
     document.getElementById("inputDiv").style.display = "none";
@@ -342,57 +344,331 @@ const volverADigitar = () => {
  * Genera el PDF usando jsPDF y autoTable, incluyendo las imágenes.
  */
 const guardarInformacion = async () => {
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF('p', 'mm', 'a4');
-
-    const nombre = document.querySelector("#resultado h2").innerText;
-    const nombreArchivo = nombre.split(' ')[0].normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-
-    const fechaNacimiento = document.querySelector("#resultado h3").innerText;
-    const horaNacimiento = document.querySelector("#resultado h4").innerText;
-    const table = document.querySelector(".normal-table");
-
-    pdf.setFont("Helvetica", "bold");
-    pdf.setFontSize(16);
-    const pageWidth = pdf.internal.pageSize.getWidth();
-
-    let textWidth = pdf.getTextWidth(nombre);
-    let textX = (pageWidth - textWidth) / 2;
-    pdf.text(nombre, textX, 20);
-
-    pdf.setFontSize(14);
-    textWidth = pdf.getTextWidth(fechaNacimiento);
-    textX = (pageWidth - textWidth) / 2;
-    pdf.text(fechaNacimiento, textX, 30);
-
-    textWidth = pdf.getTextWidth(horaNacimiento);
-    textX = (pageWidth - textWidth) / 2;
-    pdf.text(horaNacimiento, textX, 40);
-
-    const imagenes = await cargarImagenes();
-    const headers = Array.from(table.querySelectorAll("th")).map(th => th.innerText);
-    const rows = Array.from(table.querySelectorAll("tr")).slice(1).map(tr =>
-        Array.from(tr.querySelectorAll("td")).map(td => td.innerText)
-    );
-
-    const startY = 50;
-    pdf.autoTable({
-        head: [headers],
-        body: rows,
-        startY: startY,
-        styles: { font: "helvetica", fontStyle: "normal" },
-        didDrawCell: function(data) {
-            if (data.column.index === 8) {
-                const astro = data.row.raw[1];
-                const dataUrl = imagenes[astro];
-                if (dataUrl) {
-                    pdf.addImage(dataUrl, "PNG", data.cell.x + 2, data.cell.y + 2, 6, 6);
-                }
-            }
+    try {
+      // Inicialización del documento PDF
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+  
+      // Detección de dispositivo móvil (ancho ≤ 768px)
+      const isMobile = window.innerWidth <= 768;
+  
+      // ============================================================
+      // Extracción de encabezados y configuración de tamaños de fuente
+      // ============================================================
+      const headerContainer = document.querySelector("#resultado");
+      if (!headerContainer) {
+        console.error("No se encontró el contenedor de resultado (#resultado).");
+        return;
+      }
+      const nombreEl = headerContainer.querySelector("h2");
+      const fechaNacimientoEl = headerContainer.querySelector("h3");
+      const horaNacimientoEl = headerContainer.querySelector("h4");
+  
+      if (!nombreEl || !fechaNacimientoEl || !horaNacimientoEl) {
+        console.error("Faltan algunos de los elementos de encabezado (h2, h3, h4).");
+        return;
+      }
+  
+      const nombre = nombreEl.innerText;
+      const fechaNacimiento = fechaNacimientoEl.innerText;
+      const horaNacimiento = horaNacimientoEl.innerText;
+  
+      // Definir tamaños de fuente según dispositivo
+      const headerFontSize = {
+        h2: isMobile ? 14 : 16,
+        h3: isMobile ? 12 : 14,
+        h4: isMobile ? 10 : 14
+      };
+  
+      // Función auxiliar para dibujar texto centrado
+      const drawCenteredText = (text, y, fontSize, fontStyle = "bold") => {
+        pdf.setFont("Helvetica", fontStyle);
+        pdf.setFontSize(fontSize);
+        const textWidth = pdf.getTextWidth(text);
+        const textX = (pageWidth - textWidth) / 2;
+        pdf.text(text, textX, y);
+      };
+  
+      // Dibujar los encabezados
+      drawCenteredText(nombre, 20, headerFontSize.h2);
+      drawCenteredText(fechaNacimiento, 30, headerFontSize.h3);
+      drawCenteredText(horaNacimiento, 40, headerFontSize.h4);
+  
+      // ============================================================
+      // Cargar imágenes (se asume que la función cargarImagenes existe)
+      // ============================================================
+      const imagenes = await cargarImagenes();
+  
+      // ============================================================
+      // Funciones auxiliares para conversión de colores
+      // ============================================================
+      const colorNameToHex = (name) => {
+        const map = {
+          white: "#FFFFFF",
+          black: "#000000"
+        };
+        return map[name.toLowerCase()] || name;
+      };
+  
+      const hexToRgb = (hex) => {
+        let cleanedHex = hex.replace('#', '');
+        if (cleanedHex.length === 3) {
+          cleanedHex = cleanedHex.split('').map(ch => ch + ch).join('');
         }
+        const bigint = parseInt(cleanedHex, 16);
+        const r = (bigint >> 16) & 255;
+        const g = (bigint >> 8) & 255;
+        const b = bigint & 255;
+        return [r, g, b];
+      };
+  
+      // ============================================================
+      // Generación de contenido según el tipo de dispositivo
+      // ============================================================
+      if (isMobile) {
+        // ===============================
+        // Versión Mobile
+        // ===============================
+        const entries = Array.from(document.querySelectorAll(".responsive-table .entry"));
+        const boxWidth = pageWidth * 0.4; // 40% del ancho de la página
+        const boxX = (pageWidth - boxWidth) / 2; // Centrado horizontalmente
+        let currentY = 50; // Posición vertical inicial
+  
+        // Configuración de estilos para cada cuadro
+        const topPadding = 2;
+        const leftPadding = 2;
+        const lineHeight = 5;
+  
+        entries.forEach((entry) => {
+          // Obtener los divs hijos que contienen la información (en orden)
+          const divs = Array.from(entry.querySelectorAll('div'));
+          // Calcular la altura total del cuadro
+          const boxHeight = divs.length * lineHeight + 2 * topPadding;
+  
+          // Extraer el color (desde el div que comienza con "Color:")
+          const colorDiv = divs.find(div => div.innerText.trim().startsWith("Color:"));
+          let colorName = "Blanco"; // Valor por defecto
+          if (colorDiv) {
+            colorName = colorDiv.innerText.split(":")[1].trim();
+          }
+          // Se asume que existen los mapeos globales "colorMapping" y "textColorMapping"
+          const bgColor = colorMapping[colorName] || "#FFFFFF";
+          const txtColorName = textColorMapping[colorName] || "black";
+          const txtColor = colorNameToHex(txtColorName);
+  
+          // Dibujar el fondo del cuadro
+          pdf.setFillColor(bgColor);
+          pdf.rect(boxX, currentY, boxWidth, boxHeight, 'F');
+  
+          // Dibujar el borde del cuadro (1px solid #dfdfdf)
+          pdf.setDrawColor("#dfdfdf");
+          pdf.setLineWidth(0.5);
+          pdf.rect(boxX, currentY, boxWidth, boxHeight, 'S');
+  
+          // Configurar el color del texto
+          const [r, g, b] = hexToRgb(txtColor);
+          pdf.setTextColor(r, g, b);
+          pdf.setFont("Helvetica", "normal");
+          pdf.setFontSize(10);
+  
+          // Procesar cada línea (cada div)
+          divs.forEach((div, i) => {
+            const textY = currentY + topPadding + lineHeight * (i + 1) - 1;
+            const textX = boxX + leftPadding;
+  
+            const imgElement = div.querySelector('img');
+            if (imgElement) {
+              // Se asume que existe un <strong> con el texto (ejemplo: "Símbolo:")
+              const strongEl = div.querySelector('strong');
+              const textPart = strongEl ? strongEl.innerText.trim() : "";
+              pdf.text(textPart, textX, textY);
+              const txtWidth = pdf.getTextWidth(textPart);
+              // Alinear la imagen (5×5 mm) verticalmente con un offset fijo
+              const imageY = textY - 3.5;
+              // Dibujar fondo para el símbolo con color #f5f5dc
+              pdf.setFillColor("#f5f5dc");
+              pdf.rect(textX + txtWidth + 1, imageY, 5, 5, 'F');
+              // Agregar la imagen encima
+              const astroName = imgElement.alt;
+              const dataUrl = imagenes[astroName];
+              if (dataUrl) {
+                pdf.addImage(dataUrl, "PNG", textX + txtWidth + 1, imageY, 5, 5);
+              }
+              // Restaurar el color de relleno para las siguientes líneas
+              pdf.setFillColor(bgColor);
+            } else {
+              const text = div.innerText.replace(/\n/g, ' ');
+              pdf.text(text, textX, textY);
+            }
+          });
+  
+          // Actualizar la posición vertical para el siguiente cuadro
+          currentY += boxHeight + 5;
+          if (currentY > pdf.internal.pageSize.getHeight() - 20) {
+            pdf.addPage();
+            currentY = 20;
+          }
+        });
+      } else {
+        // ===============================
+        // Versión Desktop con autoTable
+        // ===============================
+        const table = document.querySelector(".normal-table");
+        if (!table) {
+          console.error("No se encontró la tabla (.normal-table).");
+          return;
+        }
+        // Obtener filas y encabezados del HTML
+        const htmlRows = Array.from(table.querySelectorAll("tr")).slice(1);
+        const headers = Array.from(table.querySelectorAll("th")).map(th => th.innerText);
+        const rows = htmlRows.map(tr => {
+          const cells = Array.from(tr.querySelectorAll("td"));
+          // Se omite el contenido de la columna 8 (índice 8)
+          return cells.map((td, index) => (index === 8 ? "" : td.innerText));
+        });
+  
+        const startY = 50;
+        pdf.autoTable({
+          head: [headers],
+          body: rows,
+          startY: startY,
+          headStyles: {
+            fillColor: '#7e7e7e',    // Fondo de la cabecera
+            textColor: '#ffffff',    // Texto de la cabecera
+            halign: 'center',
+            valign: 'middle',
+            lineWidth: 0.5,
+            lineColor: '#dfdfdf'
+          },
+          bodyStyles: {
+            halign: 'center',
+            valign: 'middle',
+            lineWidth: 0.5,
+            lineColor: '#dfdfdf'
+          },
+          tableLineColor: '#dfdfdf',
+          tableLineWidth: 0.5,
+          // Aplicar estilos computados de la fila HTML a cada celda
+          didParseCell: function (data) {
+            if (data.section === 'body') {
+              const htmlRow = htmlRows[data.row.index];
+              if (htmlRow) {
+                const computedStyle = window.getComputedStyle(htmlRow);
+                const bg = computedStyle.backgroundColor;
+                const color = computedStyle.color;
+                if (bg && bg !== 'rgba(0, 0, 0, 0)') {
+                  data.cell.styles.fillColor = bg;
+                }
+                if (color && color !== 'rgba(0, 0, 0, 0)') {
+                  data.cell.styles.textColor = color;
+                }
+              }
+            }
+          },
+          // Insertar el símbolo en la columna 8 con su fondo correspondiente
+          didDrawCell: function (data) {
+            if (data.column.index === 8) {
+              const astro = data.row.raw[1];
+              const dataUrl = imagenes[astro];
+              if (dataUrl) {
+                // Definir dimensiones para el símbolo (por ejemplo, 6×6 mm)
+                const desiredWidth = 6;
+                const desiredHeight = 6;
+                // Calcular posición centrada dentro de la celda
+                const offsetX = data.cell.x + (data.cell.width - desiredWidth) / 2;
+                const offsetY = data.cell.y + (data.cell.height - desiredHeight) / 2;
+                // Dibujar fondo para el símbolo
+                pdf.setFillColor("#f5f5dc");
+                pdf.rect(offsetX, offsetY, desiredWidth, desiredHeight, 'F');
+                // Agregar la imagen encima
+                pdf.addImage(dataUrl, "PNG", offsetX, offsetY, desiredWidth, desiredHeight);
+              }
+            }
+          }
+        });
+      }
+  
+      // ============================================================
+      // Generación y descarga del PDF
+      // ============================================================
+      const nombreArchivo = nombre
+        .split(' ')[0]
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toUpperCase();
+  
+      pdf.save(`${nombreArchivo}.pdf`);
+    } catch (error) {
+      console.error("Error al generar el PDF:", error);
+    }
+};
+
+const guardarInformacionPNG = async () => {    
+    // Clonamos el contenedor que se desea capturar (con id "resultado")
+    const originalElement = document.getElementById("resultado");
+    const clone = originalElement.cloneNode(true);
+  
+    // Eliminar los botones del clon (si están presentes)
+    const botones = clone.querySelectorAll("button");
+    botones.forEach(btn => btn.remove());
+  
+    // Para cada tabla en el clon, forzamos el estilo inline en la última celda de cada fila
+    clone.querySelectorAll("table").forEach(table => {
+        table.querySelectorAll("tr").forEach(tr => {
+        const cells = tr.querySelectorAll("th, td");
+        if (cells.length > 0) {
+            const lastCell = cells[cells.length - 1];
+            // Forzar centrado horizontal y vertical en la celda
+            lastCell.style.setProperty("text-align", "center", "important");
+            lastCell.style.setProperty("vertical-align", "middle", "important");
+            
+            // Si la imagen se comporta como bloque, centramos la imagen
+            const images = lastCell.querySelectorAll("img");
+            images.forEach(img => {
+            img.style.display = "block";      // Para que margin auto tenga efecto
+            img.style.margin = "auto";          // Centra la imagen dentro del contenedor
+            });
+        }
+        });
     });
 
-    pdf.save(`${nombreArchivo}.pdf`);
+    // Posicionamos el clon fuera de la vista para que html2canvas lo capture completo
+    clone.style.position = "absolute";
+    clone.style.top = "-10000px";
+    clone.style.left = "-10000px";
+    document.body.appendChild(clone);
+  
+    // Opciones para html2canvas, usando las dimensiones completas del clon
+    const options = {
+      scale: 4,                // Factor de escala para ultra calidad
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: null,
+      width: clone.scrollWidth,
+      height: clone.scrollHeight
+    };
+  
+    try {
+      const canvas = await html2canvas(clone, options);
+      document.body.removeChild(clone);
+  
+      // Convertir el canvas a Blob en formato PNG (calidad 1.0)
+      canvas.toBlob((blob) => {
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        const nombre = document.querySelector("#resultado h2").innerText;
+        const nombreArchivo = nombre.split(' ')[0]
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toUpperCase();
+        link.download = `${nombreArchivo}.png`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+      }, "image/png", 1.0);
+    } catch (error) {
+      console.error("Error al generar la imagen PNG:", error);
+    }
 };
 
 // ==========================
@@ -405,4 +681,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // document.getElementById("fecha").value = "2024-05-30T17:28";
     // document.getElementById("nombre").value = "Alexis David Rendón Chica";
     // document.getElementById("fecha").value = "1992-10-29T11:35";
+    // document.getElementById("nombre").value = "Tatiana Cadavid Sánchez";
+    // document.getElementById("fecha").value = "1989-07-08T14:35";
 });
