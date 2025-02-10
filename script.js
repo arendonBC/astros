@@ -251,7 +251,7 @@ function generarTabla() {
     const hora = fecha.getHours();
     const minutos = fecha.getMinutes();
     const horaCompleta = formatoAMPM(hora, minutos);
-    const fechaNacimiento = `${fecha.getDate().toString().padStart(2, '0')}/${(fecha.getMonth() + 1).toString().padStart(2, '0')}/${anio}`;
+    // const fechaNacimiento = `${fecha.getDate().toString().padStart(2, '0')}/${(fecha.getMonth() + 1).toString().padStart(2, '0')}/${anio}`;
     const primerDiaMes = new Date(anio, fecha.getMonth(), 1).getDay();
     const primerDiaAnio = new Date(anio, 0, 1).getDay();
     
@@ -259,6 +259,14 @@ function generarTabla() {
     const informacionActual = anio < 1968 ? infoMenor1968 : infoMayor1968;
     const ordenCorrectoActual = anio < 1968 ? ordenCorrectoMenor1967 : ordenCorrectoMayor1968;
     const astroRigeDiaActual = anio < 1968 ? astroRigeDiaMenor1967 : astroRigeDiaMayor1968;
+
+    // Aquí definimos el arreglo de meses en español
+    const meses = [
+      "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+      "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    ];
+    // Construir la fecha de nacimiento en el formato deseado
+    const fechaNacimiento = `${fecha.getDate().toString().padStart(2, '0')} de ${meses[fecha.getMonth()]} de ${anio}`;
 
     // Los "dias" que se mostrarán en la tabla:
     const dias = [
@@ -270,8 +278,8 @@ function generarTabla() {
 
     let tablaHTML = `
         <h2>${nombre}</h2>
-        <h3>Fecha de Nacimiento: <strong>${fechaNacimiento}</strong></h3>
-        <h4>Hora de Nacimiento: <strong>${horaCompleta}</strong></h4>
+        <h3>Nacimiento: <strong>${fechaNacimiento}</strong></h3>
+        <h4>Hora: <strong>${horaCompleta}</strong></h4>
         <table class="normal-table">
             <tr>
                 <th>Día</th>
@@ -706,10 +714,10 @@ const guardarInformacionPNG = async () => {
 // ==========================
 document.addEventListener("DOMContentLoaded", () => {
   // Convierte a mayúsculas en tiempo real el contenido del input de nombre
-    const nombreInput = document.getElementById("nombre");
-    nombreInput.addEventListener("input", () => {
-        nombreInput.value = nombreInput.value.toUpperCase();
-    });
+  const nombreInput = document.getElementById("nombre");
+  nombreInput.addEventListener("input", () => {
+    nombreInput.value = nombreInput.value.toUpperCase();
+  });
   // Establece los valores por defecto: en este caso, el nombre fijo y la fecha/hora actuales.
   document.getElementById("fecha").value = getCurrentDateTimeString();
   // document.getElementById("nombre").value = "Agustín Rendón Cadavid";
