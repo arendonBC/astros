@@ -261,10 +261,7 @@ function generarTabla() {
     const astroRigeDiaActual = anio < 1968 ? astroRigeDiaMenor1967 : astroRigeDiaMayor1968;
 
     // Aquí definimos el arreglo de meses en español
-    const meses = [
-      "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-      "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-    ];
+    const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio","Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
     // Construir la fecha de nacimiento en el formato deseado
     const fechaNacimiento = `${fecha.getDate().toString().padStart(2, '0')} de ${meses[fecha.getMonth()]} de ${anio}`;
 
